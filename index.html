@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ResidencialBot - Tu asistente de conjunto residencial 24/7</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'whatsapp': '#25D366',
+                        'primary': '#3b82f6',
+                        'primary-light': '#60a5fa',
+                        'accent': '#6b7280',
+                        'secondary': '#9ca3af',
+                        'residential-blue': '#1e40af',
+                        'residential-green': '#059669'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .minimal-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .sticky-buttons {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .whatsapp-float {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+        }
+        
+        .whatsapp-chat {
+            background: #f9fafb;
+        }
+        
+        .message-sent {
+            background: #3b82f6;
+            color: white;
+            border-radius: 16px 16px 4px 16px;
+        }
+        
+        .message-received {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px 16px 16px 4px;
+        }
+        
+        .message-time {
+            font-size: 11px;
+            color: #6b7280;
+        }
+        
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: #9ca3af;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+        
+        .whatsapp-phone {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .whatsapp-header {
+            background: white;
+            color: #111827;
+            padding: 16px;
+            border-bottom: 1px solid #e5e7eb;
+            border-radius: 16px 16px 0 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background: #25D366;
+            border-radius: 50%;
+        }
+        
+        .chat-animation {
+            animation: slideInUp 0.3s ease-out;
+        }
+        
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .minimal-button {
+            transition: all 0.2s ease;
+        }
+        
+        .minimal-button:hover {
+            transform: translateY(-1px);
+        }
+
+        .residential-gradient {
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+        }
+
+        .security-badge {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        }
+
+        .residential-card {
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+        }
+    </style>
+</head>
+<body class="bg-white min-h-screen">
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo -->
+                <div class="flex items-center">
+                    <div class="w-8 h-8 residential-gradient rounded-lg flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                        </svg>
+                    </div>
+                    <h1 class="text-xl font-semibold text-gray-900">ResidencialBot</h1>
+                </div>
+
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#features" class="text-gray-600 hover:text-gray-900 transition-colors">Características</a>
+                    <a href="#pricing" class="text-gray-600 hover:text-gray-900 transition-colors">Precios</a>
+                    <a href="#interactive-demo" class="text-gray-600 hover:text-gray-900 transition-colors">Demo</a>
+                    <a href="#demo" class="bg-primary hover:bg-primary-light text-white px-4 py-2 rounded-lg transition-all duration-200 minimal-button">
+                        Empezar
+                    </a>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden">
+                    <button onclick="toggleMobileMenu()" class="text-gray-600 p-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile Menu -->
+            <div id="mobile-menu" class="hidden md:hidden pb-4 border-t border-gray-100 mt-4 pt-4">
+                <div class="flex flex-col space-y-3">
+                    <a href="#features" class="text-gray-600 hover:text-gray-900 transition-colors">Características</a>
+                    <a href="#pricing" class="text-gray-600 hover:text-gray-900 transition-colors">Precios</a>
+                    <a href="#interactive-demo" class="text-gray-600 hover:text-gray-900 transition-colors">Demo</a>
+                    <a href="#demo" class="bg-primary hover:bg-primary-light text-white px-4 py-2 rounded-lg transition-all duration-200 text-center">
+                        Empezar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- WhatsApp Float Button -->
+    <div class="whatsapp-float">
+        <a href="https://wa.me/573001234567" target="_blank" class="bg-whatsapp hover:bg-green-600 text-white p-3 rounded-full shadow-sm transition-all duration-200 flex items-center justify-center minimal-button">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893A11.821 11.821 0 0020.465 3.63"/>
+            </svg>
+        </a>
+    </div>
+
+    <!-- Sticky Action Buttons -->
+    <div class="sticky-buttons flex flex-col gap-2">
+        <button onclick="scrollToDemo()" class="bg-primary hover:bg-primary-light text-white px-5 py-2 rounded-lg shadow-sm transition-all duration-200 text-sm minimal-button">
+            Probar ahora
+        </button>
+        <a href="https://wa.me/573001234567" target="_blank" class="bg-whatsapp hover:bg-green-600 text-white px-5 py-2 rounded-lg shadow-sm transition-all duration-200 text-sm text-center minimal-button">
+            WhatsApp
+        </a>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="min-h-screen flex items-center justify-center px-4 py-20 pt-32" id="features">
+        <div class="max-w-6xl mx-auto">
+            <div class="grid lg:grid-cols-2 gap-16 items-center">
+                <div class="text-center lg:text-left">
+                    <h1 class="text-5xl md:text-6xl font-light text-gray-900 mb-6 leading-tight">
+                        Administra tu 
+                        <span class="font-medium text-primary">conjunto</span>
+                    </h1>
+                    <p class="text-xl text-gray-600 mb-8 font-light">
+                        Consulta pagos, reserva espacios, solicita servicios y gestiona todo desde WhatsApp las 24 horas
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                        <button onclick="scrollToDemo()" class="bg-primary hover:bg-primary-light text-white px-8 py-3 rounded-lg transition-all duration-200 minimal-button">
+                            Ver demo
+                        </button>
+                        <a href="https://wa.me/573001234567" target="_blank" class="border border-gray-300 hover:border-gray-400 text-gray-700 px-8 py-3 rounded-lg transition-all duration-200 text-center minimal-button">
+                            Hablar con experto
+                        </a>
+                    </div>
+                    
+                    <!-- Security Badge -->
+                    <div class="mt-8 flex items-center justify-center lg:justify-start">
+                        <div class="security-badge text-white px-4 py-2 rounded-full text-sm flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
+                            </svg>
+                            Datos seguros y privados
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- WhatsApp Phone Mockup -->
+                <div class="flex justify-center">
+                    <div class="whatsapp-phone w-80 max-w-full">
+                        <div class="whatsapp-header">
+                            <div class="w-8 h-8 residential-gradient rounded-full flex items-center justify-center">
+                                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <div class="font-medium text-sm">Torres del Parque</div>
+                                <div class="text-xs text-gray-500 flex items-center gap-1">
+                                    <div class="status-dot"></div>
+                                    siempre disponible
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="whatsapp-chat p-4 h-80 overflow-hidden">
+                            <div id="chat-messages" class="space-y-3">
+                                <!-- Messages will be added here by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Por qué flujos para conjuntos residenciales -->
+    <section class="py-20 px-4 bg-gray-50">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-light text-center text-gray-900 mb-16">¿Por qué flujos estructurados para tu conjunto?</h2>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="minimal-card rounded-lg p-8 border-2 border-blue-500">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-medium text-gray-900">Flujos Precisos y Seguros</h3>
+                    </div>
+                    <p class="text-gray-600 mb-6">Procesos estructurados que garantizan información exacta y privacidad de datos.</p>
+                    <ul class="text-gray-600 space-y-2 text-sm">
+                        <li>✓ <strong>Consultar pagos:</strong> Estados de cuenta actualizados</li>
+                        <li>✓ <strong>Reservar espacios:</strong> Disponibilidad en tiempo real</li>
+                        <li>✓ <strong>Solicitar servicios:</strong> Parqueaderos, gimnasio, etc.</li>
+                        <li>✓ <strong>Reportar novedades:</strong> Mantenimiento y reparaciones</li>
+                        <li>✓ <strong>Información segura:</strong> Solo datos del apartamento autorizado</li>
+                    </ul>
+                </div>
+                <div class="minimal-card rounded-lg p-8 opacity-75">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-6 h-6 bg-gray-400 rounded-full flex items-center justify-center">
+                            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-medium text-gray-500">IA Conversacional</h3>
+                    </div>
+                    <p class="text-gray-500 mb-6">Riesgosa para administración. Puede exponer datos privados o dar información incorrecta.</p>
+                    <ul class="text-gray-500 space-y-2 text-sm">
+                        <li>⚠ Puede mostrar datos de otros apartamentos</li>
+                        <li>⚠ Información desactualizada de pagos</li>
+                        <li>⚠ Reservas duplicadas o incorrectas</li>
+                        <li>⚠ Sin validación de identidad</li>
+                        <li>⚠ Riesgo de privacidad de datos</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="text-center mt-12">
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-6 max-w-2xl mx-auto">
+                    <h4 class="font-medium text-blue-900 mb-2">En administración residencial, la precisión es clave</h4>
+                    <p class="text-blue-800 text-sm">Los flujos estructurados garantizan información exacta, privacidad de datos y procesos seguros para todos los residentes.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Funcionalidades para conjuntos residenciales -->
+    <section class="py-20 px-4 bg-white">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-light text-center text-gray-900 mb-16">Todo lo que tu conjunto necesita automatizado</h2>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="text-center">
+                    <div class="w-16 h-16 residential-gradient rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Consultar Pagos</h3>
+                    <p class="text-gray-600 text-sm">Estado de cuenta, administración, servicios y cuotas extraordinarias</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 residential-gradient rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Reservar Espacios</h3>
+                    <p class="text-gray-600 text-sm">Piscina, jacuzzi, sauna, turco, salón social y zonas comunes</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 residential-gradient rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10v11M20 10v11"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Servicios del Conjunto</h3>
+                    <p class="text-gray-600 text-sm">Parqueaderos, gimnasio, lavandería y servicios adicionales</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 residential-gradient rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Parqueaderos Rotativos</h3>
+                    <p class="text-gray-600 text-sm">Solicitud y asignación de espacios de parqueo temporal</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 residential-gradient rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Reportar Novedades</h3>
+                    <p class="text-gray-600 text-sm">Mantenimiento, reparaciones, quejas y sugerencias</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 residential-gradient rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Información General</h3>
+                    <p class="text-gray-600 text-sm">Horarios, reglamentos, comunicados y contactos</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Beneficios para conjuntos residenciales -->
+    <section class="py-20 px-4 bg-gray-50">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-light text-center text-gray-900 mb-16">Beneficios para tu conjunto residencial</h2>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="text-center">
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Atención 24/7</h3>
+                    <p class="text-gray-600 text-sm">Residentes pueden consultar información a cualquier hora</p>
+                </div>
+                <div class="text-center">
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Menos Llamadas</h3>
+                    <p class="text-gray-600 text-sm">Reducción del 80% en consultas telefónicas a administración</p>
+                </div>
+                <div class="text-center">
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Información Actualizada</h3>
+                    <p class="text-gray-600 text-sm">Estados de cuenta y disponibilidad en tiempo real</p>
+                </div>
+                <div class="text-center">
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Reservas Automáticas</h3>
+                    <p class="text-gray-600 text-sm">Gestión eficiente de espacios comunes sin conflictos</p>
+                </div>
+                <div class="text-center">
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Mayor Satisfacción</h3>
+                    <p class="text-gray-600 text-sm">Residentes satisfechos con servicio rápido y eficiente</p>
+                </div>
+                <div class="text-center">
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Datos Seguros</h3>
+                    <p class="text-gray-600 text-sm">Información privada y protegida de cada apartamento</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Interactiva -->
+    <section class="py-20 px-4 bg-white" id="interactive-demo">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-4xl font-bold text-center text-gray-800 mb-8">Prueba como residente</h2>
+            <p class="text-center text-gray-600 mb-12">Simulación - Consultando en Torres del Parque</p>
+            
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <!-- Chat Simulado -->
+                <div class="whatsapp-phone w-full max-w-sm mx-auto">
+                    <div class="whatsapp-header">
+                        <div class="w-10 h-10 residential-gradient rounded-full flex items-center justify-center text-white font-bold">
+                            🏢
+                        </div>
+                        <div class="flex-1">
+                            <div class="font-semibold">Torres del Parque</div>
+                            <div class="text-sm opacity-75 flex items-center gap-1">
+                                <div class="status-dot"></div>
+                                tu asistente residencial
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="whatsapp-chat p-4 h-96 overflow-y-auto">
+                        <div id="demo-messages" class="space-y-3">
+                            <!-- Messages will be populated by JavaScript -->
+                        </div>
+                        <div id="typing-indicator" class="hidden">
+                            <div class="message-received p-3 max-w-xs">
+                                <div class="typing-indicator">
+                                    <div class="typing-dot"></div>
+                                    <div class="typing-dot"></div>
+                                    <div class="typing-dot"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Controles y Explicación -->
+                <div class="space-y-6">
+                    <div class="minimal-card rounded-2xl p-8">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-4">Prueba el asistente</h3>
+                        <p class="text-gray-600 mb-6">Haz clic en las opciones para ver cómo funciona el sistema de administración automatizado</p>
+                        
+                        <div class="space-y-2">
+                            <button onclick="simulateMessage('pagos')" class="w-full bg-primary hover:bg-primary-light text-white p-3 rounded-lg transition-all duration-200 text-left text-sm minimal-button">
+                                💳 Consultar pagos
+                            </button>
+                            <button onclick="simulateMessage('reservas')" class="w-full border border-gray-300 hover:border-gray-400 text-gray-700 p-3 rounded-lg transition-all duration-200 text-left text-sm minimal-button">
+                                📅 Reservar espacios
+                            </button>
+                            <button onclick="simulateMessage('servicios')" class="w-full border border-gray-300 hover:border-gray-400 text-gray-700 p-3 rounded-lg transition-all duration-200 text-left text-sm minimal-button">
+                                🏋️ Servicios del conjunto
+                            </button>
+                            <button onclick="simulateMessage('parqueaderos')" class="w-full border border-gray-300 hover:border-gray-400 text-gray-700 p-3 rounded-lg transition-all duration-200 text-left text-sm minimal-button">
+                                🚗 Parqueaderos rotativos
+                            </button>
+                            <button onclick="simulateMessage('novedades')" class="w-full border border-gray-300 hover:border-gray-400 text-gray-700 p-3 rounded-lg transition-all duration-200 text-left text-sm minimal-button">
+                                🔧 Reportar novedades
+                            </button>
+                        </div>
+                        
+                        <div class="mt-6 pt-6 border-t border-gray-200">
+                            <button onclick="resetDemo()" class="text-gray-500 hover:text-gray-700 text-sm">
+                                🔄 Reiniciar conversación
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <h4 class="font-semibold text-blue-800">Perfecto para conjuntos</h4>
+                        </div>
+                        <ul class="text-blue-700 text-sm space-y-2">
+                            <li>✓ <strong>Consultas automáticas:</strong> Estados de cuenta 24/7</li>
+                            <li>✓ <strong>Reservas inteligentes:</strong> Disponibilidad en tiempo real</li>
+                            <li>✓ <strong>Proceso seguro:</strong> Solo información del apartamento autorizado</li>
+                            <li>✓ <strong>Datos privados:</strong> Información protegida y confidencial</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Planes y Precios -->
+    <section class="py-20 px-4 bg-gray-50" id="pricing">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-light text-center text-gray-900 mb-4">Planes para conjuntos residenciales</h2>
+            <p class="text-center text-gray-600 mb-16">Desde edificios pequeños hasta grandes unidades residenciales</p>
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Plan Básico -->
+                <div class="minimal-card rounded-lg p-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Básico</h3>
+                    <div class="text-2xl font-light text-gray-900 mb-1">$149.000</div>
+                    <div class="text-sm text-gray-500 mb-6">Hasta 50 apartamentos</div>
+                    <ul class="space-y-2 mb-8 text-sm text-gray-600">
+                        <li>• Consulta de pagos</li>
+                        <li>• Reserva de espacios</li>
+                        <li>• Soporte por email</li>
+                        <li>• Edificios pequeños</li>
+                    </ul>
+                    <button class="w-full bg-primary hover:bg-primary-light text-white py-2 rounded-lg transition-all duration-200 minimal-button text-sm">
+                        Empezar
+                    </button>
+                </div>
+
+                <!-- Plan Profesional -->
+                <div class="minimal-card rounded-lg p-6 border-2 border-primary relative">
+                    <div class="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-primary text-white px-3 py-1 rounded text-xs">
+                        Más popular
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Profesional</h3>
+                    <div class="text-2xl font-light text-gray-900 mb-1">$299.000</div>
+                    <div class="text-sm text-gray-500 mb-6">Hasta 150 apartamentos</div>
+                    <ul class="space-y-2 mb-8 text-sm text-gray-600">
+                        <li>• Servicios del conjunto</li>
+                        <li>• Parqueaderos rotativos</li>
+                        <li>• Reportes de novedades</li>
+                        <li>• Conjuntos medianos</li>
+                    </ul>
+                    <button class="w-full bg-primary hover:bg-primary-light text-white py-2 rounded-lg transition-all duration-200 minimal-button text-sm">
+                        Empezar
+                    </button>
+                </div>
+
+                <!-- Plan Premium -->
+                <div class="minimal-card rounded-lg p-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Premium</h3>
+                    <div class="text-2xl font-light text-gray-900 mb-1">$499.000</div>
+                    <div class="text-sm text-gray-500 mb-6">Hasta 300 apartamentos</div>
+                    <ul class="space-y-2 mb-8 text-sm text-gray-600">
+                        <li>• Integración con software</li>
+                        <li>• Reportes avanzados</li>
+                        <li>• Múltiples torres</li>
+                        <li>• Conjuntos grandes</li>
+                    </ul>
+                    <button class="w-full bg-primary hover:bg-primary-light text-white py-2 rounded-lg transition-all duration-200 minimal-button text-sm">
+                        Empezar
+                    </button>
+                </div>
+
+                <!-- Plan Enterprise -->
+                <div class="minimal-card rounded-lg p-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Enterprise</h3>
+                    <div class="text-2xl font-light text-gray-900 mb-1">$799.000</div>
+                    <div class="text-sm text-gray-500 mb-6">Más de 300 apartamentos</div>
+                    <ul class="space-y-2 mb-8 text-sm text-gray-600">
+                        <li>• API personalizada</li>
+                        <li>• Múltiples conjuntos</li>
+                        <li>• Soporte dedicado</li>
+                        <li>• Unidades residenciales</li>
+                    </ul>
+                    <button class="w-full bg-primary hover:bg-primary-light text-white py-2 rounded-lg transition-all duration-200 minimal-button text-sm">
+                        Empezar
+                    </button>
+                </div>
+            </div>
+            <p class="text-center text-sm text-gray-500 mt-8">
+                Precios en COP. No incluyen IVA. Incluye configuración inicial y capacitación.
+            </p>
+        </div>
+    </section>
+
+    <!-- Testimonios -->
+    <section class="py-20 px-4">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-4xl font-bold text-center text-gray-800 mb-16">Conjuntos que automatizaron su administración</h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="minimal-card rounded-2xl p-8 shadow-lg">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold mr-4">
+                            LM
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800">Laura Martínez</h4>
+                            <p class="text-sm text-gray-600">Administradora - Conjunto Alameda</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600">"Redujimos 85% las llamadas de consultas. Los residentes consultan sus pagos y reservan espacios sin molestar a administración."</p>
+                </div>
+                <div class="minimal-card rounded-2xl p-8 shadow-lg">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold mr-4">
+                            CR
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800">Carlos Rodríguez</h4>
+                            <p class="text-sm text-gray-600">Consejo de Administración - Torres del Norte</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600">"Los residentes están felices. Pueden consultar todo desde WhatsApp las 24 horas. Ya no hay colas en administración."</p>
+                </div>
+                <div class="minimal-card rounded-2xl p-8 shadow-lg">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold mr-4">
+                            MV
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800">María Vargas</h4>
+                            <p class="text-sm text-gray-600">Residente - Edificio Central Park</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600">"Súper práctico. Consulto mis pagos, reservo la piscina y reporto novedades desde mi celular. Muy fácil de usar."</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Final -->
+    <section class="py-20 px-4" id="demo">
+        <div class="max-w-4xl mx-auto text-center">
+            <div class="minimal-card rounded-3xl p-12 shadow-2xl">
+                <h2 class="text-4xl font-bold text-gray-800 mb-6">¿Listo para automatizar tu conjunto?</h2>
+                <p class="text-xl text-gray-600 mb-8">Agenda una demo personalizada y ve cómo ResidencialBot transforma la administración</p>
+                <form class="max-w-md mx-auto space-y-4">
+                    <input type="text" placeholder="Nombre del conjunto" class="w-full px-4 py-3 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary">
+                    <select class="w-full px-4 py-3 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary">
+                        <option>Número de apartamentos</option>
+                        <option>1-50 apartamentos</option>
+                        <option>51-150 apartamentos</option>
+                        <option>151-300 apartamentos</option>
+                        <option>Más de 300 apartamentos</option>
+                    </select>
+                    <input type="tel" placeholder="Teléfono de contacto" class="w-full px-4 py-3 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary">
+                    <button type="submit" class="w-full bg-primary hover:bg-primary-light text-white py-4 rounded-full text-lg font-semibold transition-all duration-300 shadow-lg">
+                        Solicitar demo gratuita
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-100 py-12 px-4">
+        <div class="max-w-6xl mx-auto">
+            <div class="grid md:grid-cols-3 gap-8">
+                <div>
+                    <div class="flex items-center mb-4">
+                        <div class="w-8 h-8 residential-gradient rounded-lg flex items-center justify-center mr-3">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900">ResidencialBot</h3>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-4">Tu asistente residencial siempre disponible</p>
+                    <div class="security-badge text-white px-3 py-1 rounded text-xs inline-flex items-center gap-1">
+                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
+                        </svg>
+                        Datos Seguros
+                    </div>
+                </div>
+                <div>
+                    <h4 class="font-medium text-gray-900 mb-4">Contacto</h4>
+                    <div class="space-y-2 text-sm text-gray-600">
+                        <p>hola@residencialbot.co</p>
+                        <p>+57 300 123 4567</p>
+                        <p>Bogotá, Colombia</p>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="font-medium text-gray-900 mb-4">Legal</h4>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li><a href="#" class="hover:text-gray-900 transition-colors">Política de Privacidad</a></li>
+                        <li><a href="#" class="hover:text-gray-900 transition-colors">Términos y Condiciones</a></li>
+                        <li><a href="#" class="hover:text-gray-900 transition-colors">Protección de Datos</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-100 mt-8 pt-8 text-center text-sm text-gray-500">
+                <p>&copy; 2024 ResidencialBot. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function scrollToDemo() {
+            document.getElementById('demo').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Hero chat animation
+        const heroMessages = [
+            { type: 'received', text: '¡Hola! Bienvenido a Torres del Parque 🏢', time: '19:30' },
+            { type: 'received', text: '¿En qué puedo ayudarte hoy?\n\n💳 Consultar pagos\n📅 Reservar espacios\n🏋️ Servicios del conjunto\n🚗 Parqueaderos rotativos\n🔧 Reportar novedades', time: '19:30' },
+            { type: 'sent', text: '💳 Consultar pagos', time: '19:31' },
+            { type: 'received', text: 'Para consultar tus pagos necesito verificar tu identidad.\n\n🏠 Ingresa tu apartamento:\n*Ejemplo: Torre A - Apto 501*\n\n🔐 Código de seguridad:\n*Los últimos 4 dígitos de tu cédula*', time: '19:31' },
+            { type: 'sent', text: 'Torre B - Apto 302', time: '19:32' },
+            { type: 'received', text: '💳 ESTADO DE CUENTA - DICIEMBRE 2024\n\n🏠 Torre B - Apartamento 302\n👤 Propietario: Juan Pérez\n\n💰 SALDOS:\n• Administración: $0 ✅ Al día\n• Cuota extraordinaria: $45.000 ⏳ Vence 31/Dic\n• Parqueadero adicional: $25.000 ✅ Pagado\n\n📅 PRÓXIMOS VENCIMIENTOS:\n• Enero 2025: $180.000 (Vence 10/Ene)\n\n¿Necesitas el recibo de algún pago específico?', time: '19:32' }
+        ];
+
+        let heroMessageIndex = 0;
+
+        function addHeroMessage() {
+            const chatContainer = document.getElementById('chat-messages');
+            if (heroMessageIndex < heroMessages.length) {
+                const message = heroMessages[heroMessageIndex];
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `chat-animation ${message.type === 'sent' ? 'message-sent ml-auto' : 'message-received'} p-3 max-w-xs`;
+                messageDiv.innerHTML = `
+                    <div class="text-sm whitespace-pre-line">${message.text}</div>
+                    <div class="message-time ${message.type === 'sent' ? 'text-right' : ''} mt-1">${message.time}</div>
+                `;
+                chatContainer.appendChild(messageDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                heroMessageIndex++;
+                
+                if (heroMessageIndex < heroMessages.length) {
+                    setTimeout(addHeroMessage, 2000);
+                } else {
+                    setTimeout(() => {
+                        heroMessageIndex = 0;
+                        chatContainer.innerHTML = '';
+                        addHeroMessage();
+                    }, 5000);
+                }
+            }
+        }
+
+        // Demo chat simulation
+        const demoResponses = {
+            pagos: [
+                { type: 'sent', text: '💳 Consultar pagos', time: '20:15' },
+                { type: 'received', text: 'Para consultar tus pagos necesito verificar tu identidad.\n\n🏠 Ingresa tu apartamento:\n*Ejemplo: Torre A - Apto 501*\n\n🔐 Código de seguridad:\n*Los últimos 4 dígitos de tu cédula*', time: '20:15' },
+                { type: 'sent', text: 'Torre B - Apto 302, 1234', time: '20:16' },
+                { type: 'received', text: '✅ IDENTIDAD VERIFICADA\n\n💳 ESTADO DE CUENTA - DICIEMBRE 2024\n\n🏠 Torre B - Apartamento 302\n👤 Propietario: Juan Pérez\n\n💰 SALDOS ACTUALES:\n• Administración: $0 ✅ Al día\n• Cuota extraordinaria: $45.000 ⏳ Vence 31/Dic\n• Parqueadero adicional: $25.000 ✅ Pagado\n• Gimnasio (Nov): $15.000 ✅ Pagado\n\n📅 PRÓXIMOS VENCIMIENTOS:\n• Enero 2025: $180.000 (Vence 10/Ene)\n• Cuota extraordinaria: $45.000 (Vence 31/Dic)\n\n💡 ¿Quieres ver el detalle de algún cobro?', time: '20:16' },
+                { type: 'sent', text: 'Detalle cuota extraordinaria', time: '20:17' },
+                { type: 'received', text: '📋 CUOTA EXTRAORDINARIA - DICIEMBRE 2024\n\n🏗️ CONCEPTO:\nReparación sistema de bombeo de agua\n\n💰 VALOR: $45.000\n📅 Fecha límite: 31 de Diciembre 2024\n🏦 Referencia de pago: 240302001\n\n💳 MÉTODOS DE PAGO:\n• PSE - Banco en línea\n• Efecty, Baloto, Gana\n• Transferencia bancaria\n• Pago en administración\n\n¿Necesitas los datos bancarios para transferencia?', time: '20:17' }
+            ],
+            reservas: [
+                { type: 'sent', text: '📅 Reservar espacios', time: '20:20' },
+                { type: 'received', text: '📅 RESERVA DE ESPACIOS COMUNES\n\n🏊 ESPACIOS DISPONIBLES:\n• Piscina adultos\n• Piscina niños\n• Jacuzzi\n• Sauna\n• Turco\n• Salón social\n• BBQ terraza\n• Cancha múltiple\n\n¿Qué espacio quieres reservar?', time: '20:20' },
+                { type: 'sent', text: 'Piscina adultos', time: '20:20' },
+                { type: 'received', text: '🏊 RESERVA PISCINA ADULTOS\n\n📅 ¿Para qué fecha?\n*Formato: DD/MM/AAAA*\n*Ejemplo: 25/12/2024*\n\n⏰ HORARIOS DISPONIBLES:\n• Mañana: 6:00 AM - 12:00 PM\n• Tarde: 2:00 PM - 6:00 PM\n• Noche: 7:00 PM - 10:00 PM\n\n💰 Costo: $15.000 por turno\n👥 Máximo 8 personas', time: '20:20' },
+                { type: 'sent', text: '28/12/2024 - Tarde', time: '20:21' },
+                { type: 'received', text: '✅ DISPONIBILIDAD CONFIRMADA\n\n📋 RESUMEN DE RESERVA:\n🏊 Piscina adultos\n📅 Fecha: 28 de Diciembre 2024\n⏰ Horario: 2:00 PM - 6:00 PM\n🏠 Apartamento: Torre B - 302\n👥 Máximo: 8 personas\n💰 Costo: $15.000\n\n📝 REGLAMENTO:\n• No vidrio en la zona\n• Niños con adulto responsable\n• Respetar horarios\n• Dejar limpio el área\n\n¿Confirmas la reserva?', time: '20:21' },
+                { type: 'sent', text: 'Sí, confirmo', time: '20:22' },
+                { type: 'received', text: '🎉 RESERVA CONFIRMADA\n\n📧 Código de reserva: RES-240302-001\n📱 Recibirás recordatorio por SMS\n\n💳 PAGO:\nEl costo se agregará a tu próxima factura de administración o puedes pagarlo en efectivo en portería.\n\n📞 CONTACTO EMERGENCIA:\nPortería: 601-234-5678\n\n¡Disfruta tu reserva! 🏊‍♂️', time: '20:22' }
+            ],
+            servicios: [
+                { type: 'sent', text: '🏋️ Servicios del conjunto', time: '20:25' },
+                { type: 'received', text: '🏋️ SERVICIOS DEL CONJUNTO\n\n💪 GIMNASIO:\n• Horario: 5:00 AM - 10:00 PM\n• Costo mensual: $15.000\n• Estado: Activo ✅\n\n🧺 LAVANDERÍA:\n• Horario: 6:00 AM - 8:00 PM\n• Costo por carga: $3.000\n• Disponible: 2 máquinas libres\n\n🚗 PARQUEADERO ADICIONAL:\n• Costo mensual: $25.000\n• Tu estado: Activo ✅\n• Espacio asignado: P2-15\n\n¿Qué servicio necesitas gestionar?', time: '20:25' },
+                { type: 'sent', text: 'Información gimnasio', time: '20:25' },
+                { type: 'received', text: '💪 GIMNASIO - INFORMACIÓN COMPLETA\n\n⏰ HORARIOS:\n• Lunes a Viernes: 5:00 AM - 10:00 PM\n• Sábados: 6:00 AM - 8:00 PM\n• Domingos: 7:00 AM - 6:00 PM\n\n💰 TARIFAS:\n• Mensual: $15.000\n• Trimestral: $40.000 (ahorro $5.000)\n• Anual: $150.000 (ahorro $30.000)\n\n🏋️ EQUIPOS DISPONIBLES:\n• Máquinas cardiovasculares\n• Pesas libres\n• Máquinas de fuerza\n• Área de estiramiento\n\n📋 TU ESTADO ACTUAL:\n✅ Activo hasta: 31/Enero/2025\n\n¿Quieres renovar o cambiar tu plan?', time: '20:25' },
+                { type: 'sent', text: 'Renovar mensual', time: '20:26' },
+                { type: 'received', text: '✅ RENOVACIÓN PROCESADA\n\n💪 GIMNASIO RENOVADO:\n📅 Nuevo período: 01/Feb - 28/Feb 2025\n💰 Costo: $15.000\n📋 Se agregará a tu factura de Febrero\n\n🎫 CÓDIGO DE ACCESO:\nGYM-302-0225\n*Presenta este código en recepción*\n\n📱 RECORDATORIOS:\n• Toalla obligatoria\n• Ropa deportiva requerida\n• Máximo 45 min en cardio\n• Limpiar equipos después del uso\n\n¡Disfruta tu entrenamiento! 💪', time: '20:26' }
+            ],
+            parqueaderos: [
+                { type: 'sent', text: '🚗 Parqueaderos rotativos', time: '20:30' },
+                { type: 'received', text: '🚗 PARQUEADEROS ROTATIVOS\n\n📋 INFORMACIÓN:\n• Para visitantes y uso temporal\n• Máximo 4 horas por solicitud\n• Costo: $2.000 por hora\n• Disponibles: 6 espacios\n\n⏰ HORARIOS:\n• Lunes a Viernes: 6:00 AM - 10:00 PM\n• Fines de semana: 8:00 AM - 8:00 PM\n\n¿Necesitas solicitar un espacio?', time: '20:30' },
+                { type: 'sent', text: 'Sí, solicitar espacio', time: '20:30' },
+                { type: 'received', text: '🚗 SOLICITUD DE PARQUEADERO\n\n📅 ¿Para qué fecha y hora?\n*Formato: DD/MM/AAAA HH:MM*\n*Ejemplo: 25/12/2024 14:30*\n\n⏱️ ¿Por cuántas horas?\n*Máximo 4 horas*\n\n🚙 Datos del vehículo:\n• Placa\n• Marca y modelo\n• Color', time: '20:30' },
+                { type: 'sent', text: '28/12/2024 15:00, 3 horas, ABC123, Toyota Corolla, Blanco', time: '20:31' },
+                { type: 'received', text: '✅ DISPONIBILIDAD CONFIRMADA\n\n📋 RESUMEN SOLICITUD:\n📅 Fecha: 28 de Diciembre 2024\n⏰ Hora inicio: 3:00 PM\n⏱️ Duración: 3 horas (hasta 6:00 PM)\n🚙 Vehículo: Toyota Corolla Blanco - ABC123\n🏠 Solicitante: Torre B - Apto 302\n💰 Costo total: $6.000\n\n🅿️ ESPACIO ASIGNADO: R-04\n📍 Ubicación: Sótano 1, cerca al ascensor\n\n¿Confirmas la solicitud?', time: '20:31' },
+                { type: 'sent', text: 'Confirmo', time: '20:32' },
+                { type: 'received', text: '🎉 PARQUEADERO RESERVADO\n\n🎫 Código de reserva: PARK-302-1228\n🅿️ Espacio asignado: R-04\n📱 Recibirás SMS recordatorio\n\n💳 PAGO:\n• Se agregará a tu próxima factura\n• O paga en portería al ingresar\n\n⚠️ IMPORTANTE:\n• Llega máximo 15 min después de la hora\n• Presenta código en portería\n• Respeta el tiempo asignado\n• Multa por exceso: $5.000/hora\n\n📞 Portería: 601-234-5678', time: '20:32' }
+            ],
+            novedades: [
+                { type: 'sent', text: '🔧 Reportar novedades', time: '20:35' },
+                { type: 'received', text: '🔧 REPORTAR NOVEDADES\n\n📝 TIPOS DE REPORTE:\n• 🚰 Problemas de plomería\n• ⚡ Fallas eléctricas\n• 🏗️ Daños en zonas comunes\n• 🔊 Ruidos molestos\n• 🚪 Problemas de acceso\n• 🧹 Aseo y limpieza\n• 💡 Sugerencias\n• 📞 Quejas\n\n¿Qué tipo de novedad quieres reportar?', time: '20:35' },
+                { type: 'sent', text: 'Problemas de plomería', time: '20:35' },
+                { type: 'received', text: '🚰 REPORTE DE PLOMERÍA\n\n📍 ¿Dónde está el problema?\n• En mi apartamento\n• Zonas comunes\n• Parqueadero\n• Otro lugar\n\n📝 Describe el problema:\n*Ejemplo: Goteo en llave del baño, falta presión de agua, etc.*\n\n⚠️ ¿Es urgente?\n• Sí - Requiere atención inmediata\n• No - Puede esperar horario normal', time: '20:35' },
+                { type: 'sent', text: 'En mi apartamento, goteo en cocina, no urgente', time: '20:36' },
+                { type: 'received', text: '📋 REPORTE REGISTRADO\n\n🎫 Número de caso: REP-302-1228-001\n📅 Fecha: 28 de Diciembre 2024\n🏠 Apartamento: Torre B - 302\n🚰 Problema: Goteo en cocina\n⚠️ Prioridad: Normal\n\n📞 SEGUIMIENTO:\n• Técnico asignado: Carlos Méndez\n• Contacto: 300-123-4567\n• Visita programada: 29/Dic entre 8-12 AM\n\n📱 NOTIFICACIONES:\n• SMS cuando técnico esté en camino\n• Llamada para confirmar disponibilidad\n\n💰 COSTO:\n• Diagnóstico: Gratuito\n• Reparación: Según cotización\n\n¿Alguna observación adicional?', time: '20:36' },
+                { type: 'sent', text: 'Perfecto, gracias', time: '20:37' },
+                { type: 'received', text: '✅ REPORTE COMPLETADO\n\n📧 Recibirás confirmación por email\n📱 SMS con datos del técnico\n\n🔔 RECORDATORIOS:\n• Ten disponible el apartamento mañana 8-12 AM\n• El técnico se identificará con carnet\n• Cualquier duda, contacta administración\n\n📞 CONTACTOS:\n• Administración: 601-234-5678\n• Emergencias 24h: 300-987-6543\n\n¡Gracias por reportar! Solucionaremos pronto tu problema 🔧', time: '20:37' }
+            ]
+        };
+
+        function simulateMessage(type) {
+            const messages = demoResponses[type];
+            const chatContainer = document.getElementById('demo-messages');
+            const typingIndicator = document.getElementById('typing-indicator');
+            
+            let messageIndex = 0;
+            
+            function addMessage() {
+                if (messageIndex < messages.length) {
+                    const message = messages[messageIndex];
+                    
+                    if (message.type === 'received' && messageIndex > 0) {
+                        // Show typing indicator
+                        typingIndicator.classList.remove('hidden');
+                        chatContainer.scrollTop = chatContainer.scrollHeight;
+                        
+                        setTimeout(() => {
+                            typingIndicator.classList.add('hidden');
+                            addMessageToChat(message);
+                            messageIndex++;
+                            setTimeout(addMessage, 1000);
+                        }, 1500);
+                    } else {
+                        addMessageToChat(message);
+                        messageIndex++;
+                        setTimeout(addMessage, message.type === 'sent' ? 500 : 1500);
+                    }
+                }
+            }
+            
+            function addMessageToChat(message) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `chat-animation ${message.type === 'sent' ? 'message-sent ml-auto' : 'message-received'} p-3 max-w-xs`;
+                messageDiv.innerHTML = `
+                    <div class="text-sm whitespace-pre-line">${message.text}</div>
+                    <div class="message-time ${message.type === 'sent' ? 'text-right' : ''} mt-1">${message.time}</div>
+                `;
+                chatContainer.appendChild(messageDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+            
+            addMessage();
+        }
+
+        function resetDemo() {
+            document.getElementById('demo-messages').innerHTML = '';
+            document.getElementById('typing-indicator').classList.add('hidden');
+        }
+
+        // Initialize hero chat when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(addHeroMessage, 1000);
+        });
+
+        // Form submission
+        document.querySelector('form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('¡Gracias! Te contactaremos pronto para agendar tu demo personalizada para conjuntos residenciales.');
+        });
+
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenu.classList.toggle('hidden');
+        }
+
+        // Smooth scrolling for all internal links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+                // Close mobile menu if open
+                const mobileMenu = document.getElementById('mobile-menu');
+                if (!mobileMenu.classList.contains('hidden')) {
+                    mobileMenu.classList.add('hidden');
+                }
+            });
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98152730d449e564',t:'MTc1ODI0MzY5OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
